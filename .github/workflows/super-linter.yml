@@ -1,37 +1,33 @@
 ---
-name: Lint commit
+name: Lint
 
-on:
-  push:
-  pull_request:
-  merge_group:
+on: # yamllint disable-line rule:truthy
+  push: null
+  pull_request: null
 
-# Don't grant any access by default
 permissions: {}
 
 jobs:
-  commitlint:
+  build:
+    name: Lint
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
+      packages: read
+      # To report GitHub Actions status checks
+      statuses: write
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
+          # super-linter needs the full git history to get the
+          # list of files that changed across commits
           fetch-depth: 0
 
-      - name: Check if the pull request contains a single commit
-        if: github.event_name == 'pull_request'
-        run: |
-          commit_count=${{ github.event.pull_request.commits }}
-
-          if [ -z ${commit_count} ]; then
-            echo "[ERROR] commit_count is empty"
-            exit 1
-          fi
-
-          if [[ ${commit_count} -ne 1 ]]; then
-            echo "[ERROR] This pull request contains ${commit_count} commits. Squash these commits into a single commit."
-            exit 1
-          else
-            echo "This pull request contains ${commit_count} commit."
-          fi
+      - name: Super-linter
+        uses: super-linter/super-linter@v7.3.0 # x-release-please-version
+        env:
+          # To report GitHub Actions status checks
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
